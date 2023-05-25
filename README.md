@@ -22,6 +22,16 @@ The script reads data from three CSV files stored in the data/ directory:
 2. currencies.csv - currency code and ratio to PLN.
 3. matchings.csv - matching data matching_id, top_priced_count.
 
+## Unit Tests of Exercise_2
+
+Test_Exercise_2.py contains a set of unittests for Exercise_2.py. It checks the functions in Exercise_2.py to make sure they are returning the correct outputs.
+
+To run the tests, call:
+
+```bash
+python Test_Exercise_2.py
+```
+
 ## Requirements
 
 To run these scripts, you need Python 3 and the following Python libraries: pandas, unittest.
