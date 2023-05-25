@@ -1,16 +1,10 @@
-# This is a sample Python script.
+# import necessary libraries
+from Exercise_1 import run_fizz_buzz
+from Exercise_2 import valuation_service
 
-# Press ⌃R to execute it or replace it with your code.
-# Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
-
-
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press ⌘F8 to toggle the breakpoint.
-
-
-# Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    print_hi('PyCharm')
+    # exercise 1
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    run_fizz_buzz()
+    # exercise 2
+    #valuation_service('data.csv', 'currencies.csv', 'matchings.csv')
