@@ -7,9 +7,9 @@ It then converts product prices to PLN, calculates the total price of each produ
 
 and identifies the top-priced products for each matching_id based on provided criteria.
 
-The results, which include matching_id, total_price, average price, currency, and the count of non-selected products per matching_id,
+The results, which include matching_id, total_price, average of total price within top-priced products per matching_id,
 
-are stored in 'top_products.csv'.
+currency, and the count of non-selected products per matching_id, are stored in 'top_products.csv'.
 
 Note: The CSV files are expected to be in a directory named 'data'. The script can handle FileNotFoundError.
 """
@@ -44,7 +44,9 @@ def currency_convertor_to_pln(data, currencies):
     data['currency'] = 'PLN'
     # drop 'ratio' column as it is no longer needed
     data.drop(columns='ratio', inplace=True)
+
     return data
+
 
 # function that gets top priced products based on 'matching_id'
 def get_top_priced(data, currencies, matchings):
@@ -57,30 +59,25 @@ def get_top_priced(data, currencies, matchings):
     # sort the data based on 'matching_id' and 'total_price'
     data.sort_values(['matching_id', 'total_price'], ascending=[True, False], inplace=True)
 
-    # calculate number of products in each matching_id group
-    group_length = data.groupby('matching_id').agg(
-        count=('total_price', 'count'))
-    data = data.merge(group_length, on='matching_id', how='left')
-    # calculate ignored products in each group
-    data['ignored_products_count'] = data['count'] - data['top_priced_count']
-
     # create price rank column in matching_id group
     data['rank_in_group'] = data.groupby('matching_id')['total_price'].rank(ascending=False)
-    print(data)
-    # get valid rows
-    data = data.query('top_priced_count >= rank_in_group')
-    print(data)
+    # count ignored products
+    ignored_products = data.query('top_priced_count < rank_in_group').groupby('matching_id', as_index=False)['id'].count().rename(
+        columns={'id': 'ignored_products_count'})
+    # get valid rows with ignored products count
+    data = data.query('top_priced_count >= rank_in_group').merge(ignored_products, how='left').fillna(value=0)
     # get average of 'total_price' by 'matching_id' for top ranked products
     chosen_avgs = data.groupby('matching_id', as_index=False).agg(
         avg_price=('total_price', 'mean'))
 
-    # merge data and remove unnecessary columns
+    # merge data
     result = data.merge(chosen_avgs, on='matching_id', how='right')
-    result.drop(columns=['rank_in_group', 'id', 'price', 'quantity', 'top_priced_count', 'count' ], inplace=True)
 
     # reorder the columns in the DataFrame
     column_order = ['matching_id', 'total_price', 'avg_price', 'currency', 'ignored_products_count']
     result = result[column_order]
+    # change type from float to int
+    result['ignored_products_count'] = result['ignored_products_count'].astype(int)
 
     return result
 

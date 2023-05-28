@@ -1,7 +1,6 @@
 import unittest
 from pandas.testing import assert_frame_equal
 import pandas as pd
-import os
 import Exercise_2
 
 
@@ -26,7 +25,7 @@ class TestValuationService(unittest.TestCase):
         })
 
     def test_load_data(self):
-        # Test that load_data function returns the correct dataframes
+        # test that load_data function returns the correct dataframes
         data, currencies, matchings = Exercise_2.load_data('data.csv', 'currencies.csv', 'matchings.csv')
 
         assert_frame_equal(data, self.data)
