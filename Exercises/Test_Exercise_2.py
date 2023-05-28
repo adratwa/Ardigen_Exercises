@@ -52,7 +52,7 @@ class TestValuationService(unittest.TestCase):
         expected_result = pd.DataFrame({
             'matching_id': [1, 1, 2, 2, 3, 3, 3],
             'total_price': [10080.0, 2205.0, 21000.0, 7350.0, 11760.0, 8400.0, 7560.0],
-            'avg_price': [2782.5, 2782.5, 5337.5, 5337.5, 4284.0, 4284.0, 4284.0],
+            'avg_price': [6142.5, 6142.5, 14175.0, 14175.0, 9240.0, 9240.0, 9240.0],
             'currency': ['PLN', 'PLN', 'PLN', 'PLN', 'PLN', 'PLN', 'PLN'],
             'ignored_products_count': [1, 1, 0, 0, 1, 1, 1]
         })

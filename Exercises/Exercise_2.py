@@ -16,6 +16,7 @@ Note: The CSV files are expected to be in a directory named 'data'. The script c
 
 # import necessary libraries
 import pandas as pd
+import os
 
 
 # function that reads data from csv files
@@ -24,9 +25,9 @@ def load_data(data_file, currencies_file, matchings_file):
     data_directory = 'data/'
     # try/except block to handle any FileNotFoundError
     try:
-        data = pd.read_csv(data_directory + data_file)
-        currencies = pd.read_csv(data_directory + currencies_file)
-        matchings = pd.read_csv(data_directory + matchings_file)
+        data = pd.read_csv(os.path.join(data_directory, data_file))
+        currencies = pd.read_csv(os.path.join(data_directory, currencies_file))
+        matchings = pd.read_csv(os.path.join(data_directory, matchings_file))
         return data, currencies, matchings
     except FileNotFoundError as e:
         print(f"File not found: {e}")
@@ -45,38 +46,43 @@ def currency_convertor_to_pln(data, currencies):
     data.drop(columns='ratio', inplace=True)
     return data
 
-
 # function that gets top priced products based on 'matching_id'
 def get_top_priced(data, currencies, matchings):
+    # convert the currency
     data = currency_convertor_to_pln(data, currencies)
     # compute the total price for each product
     data['total_price'] = data['price'] * data['quantity']
-
     # merge product data with matchings data on 'matching_id'
     data = pd.merge(data, matchings, on='matching_id', how='right')
     # sort the data based on 'matching_id' and 'total_price'
-    data_sorted = data.sort_values(['matching_id', 'total_price'], ascending=[True, False])
+    data.sort_values(['matching_id', 'total_price'], ascending=[True, False], inplace=True)
 
-    top_products = []
+    # calculate number of products in each matching_id group
+    group_length = data.groupby('matching_id').agg(
+        count=('total_price', 'count'))
+    data = data.merge(group_length, on='matching_id', how='left')
+    # calculate ignored products in each group
+    data['ignored_products_count'] = data['count'] - data['top_priced_count']
 
-    for matching_id, group in data_sorted.groupby('matching_id'):
-        # get the number of top priced products for each group
-        chosen_products_count = group['top_priced_count'].values[0]
-        # compute number of ignored products, in case if number is negative take 0
-        ignored_products_count = max(len(group) - chosen_products_count, 0)
+    # create price rank column in matching_id group
+    data['rank_in_group'] = data.groupby('matching_id')['total_price'].rank(ascending=False)
+    print(data)
+    # get valid rows
+    data = data.query('top_priced_count >= rank_in_group')
+    print(data)
+    # get average of 'total_price' by 'matching_id' for top ranked products
+    chosen_avgs = data.groupby('matching_id', as_index=False).agg(
+        avg_price=('total_price', 'mean'))
 
-        # select top priced products from the group
-        chosen_products = group.head(chosen_products_count)
-        # compute average price of top priced columns from the gorup
-        avg_price_in_chosen_products = round(chosen_products['price'].mean(), 2)
+    # merge data and remove unnecessary columns
+    result = data.merge(chosen_avgs, on='matching_id', how='right')
+    result.drop(columns=['rank_in_group', 'id', 'price', 'quantity', 'top_priced_count', 'count' ], inplace=True)
 
-        # iterate over each chosen product and add it to the top products list
-        for row in chosen_products.itertuples(index=False):
-            total_price = row.total_price
-            top_products.append([matching_id, total_price, avg_price_in_chosen_products, 'PLN', ignored_products_count])
+    # reorder the columns in the DataFrame
+    column_order = ['matching_id', 'total_price', 'avg_price', 'currency', 'ignored_products_count']
+    result = result[column_order]
 
-    return pd.DataFrame(top_products, columns=['matching_id', 'total_price', 'avg_price', 'currency',
-                                                 'ignored_products_count'])
+    return result
 
 
 # function that saves the top products data to a csv file
